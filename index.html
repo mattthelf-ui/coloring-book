@@ -167,11 +167,22 @@ document.getElementById('reset').onclick=reset;
 // pages: each keeps its own coloring in memory while the app is open
 const pk=document.getElementById('pick'),saved={};let curPage=null;
 function loadPage(pg){if(curPage)saved[curPage]=col;window.ready=false;resetView();ol.src=pg.ol;cv.setAttribute('aria-label',pg.name+' coloring page');
- pk.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.id===pg.id));
- const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);x.drawImage(im,0,0,W,H);const p=x.getImageData(0,0,W,H).data;wall=new Uint8Array(W*H);for(let i=0;i<W*H;i++)wall[i]=(p[i*4]+p[i*4+1]+p[i*4+2])<384?1:0;curPage=pg.id;if(saved[pg.id]){col=saved[pg.id];render()}else reset();window.ready=true};im.src=pg.src}
-PAGES.forEach(pg=>{const b=document.createElement('button');b.dataset.id=pg.id;b.setAttribute('aria-label',pg.name+(pg.tag?' ('+pg.tag+')':''));b.innerHTML='<img alt="" src="'+pg.src+'"><span>'+pg.name+'</span>'+(pg.tag?'<em>⭐ '+pg.tag+'</em>':'');b.onclick=()=>{if(curPage!==pg.id)loadPage(pg)};pk.appendChild(b)});
+ pk.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.id===pg.tab));
+ const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);x.drawImage(im,0,0,W,H);const p=x.getImageData(0,0,W,H).data;wall=new Uint8Array(W*H);for(let i=0;i<W*H;i++)wall[i]=(p[i*4]+p[i*4+1]+p[i*4+2])<384?1:0;curPage=pg.id;if(saved[pg.id]){col=saved[pg.id];render()}else reset();window.ready=true};im.onerror=()=>{window.pageError=pg.id};im.src=pg.src}
+const STY={'01':'Cartoon','02':'Realistic','03':'Mandala','04':'Chibi','05':'Geometric','06':'Storybook','07':'Kawaii','08':'Toddler','09':'Pattern','10':'Halloween'};
+const TABS=[["cow","Cow"],["cat","Cat"],["dino","Dino"],["highland","Highland Cow"]];
+PAGES.forEach(p=>{p.tab=p.id;p.style='Original';p.thumb=p.src});
+TABS.forEach(([a,n])=>['01','02','03','04','05','06','07','08','09','10'].forEach(k=>{const id=a+'-'+k,d='pages/'+a+'/'+id;PAGES.push({id,tab:a,name:n+' – '+STY[k],style:STY[k],tag:'',src:d+'.png',ol:d+'_outline.svg',thumb:d+'_thumb.png'})}));
+const gal=document.createElement('div');gal.id='gal';gal.setAttribute('role','dialog');gal.innerHTML='<div id="galhd"><b id="galtt"></b><button id="galx" aria-label="Close">✕</button></div><div id="galgrid"></div>';document.body.appendChild(gal);
+const gst=document.createElement('style');gst.textContent='#gal{position:fixed;left:8px;right:8px;top:64px;max-height:calc(100dvh - 80px);overflow:auto;z-index:50;background:#fff;border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.35);padding:10px;display:none}#gal.open{display:block}#galhd{display:flex;justify-content:space-between;align-items:center;font-size:18px;margin-bottom:8px}#galx{border:0;background:#eee;border-radius:50%;width:36px;height:36px;font-size:18px}#galgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}#galgrid button{border:3px solid #eee;border-radius:12px;background:#fff;padding:4px;display:flex;flex-direction:column;align-items:center;font:inherit;font-size:12px;font-weight:bold;color:#333}#galgrid button.on{border-color:#7048e8;background:#f3f0ff}#galgrid img{width:100%;aspect-ratio:3/4;object-fit:contain;pointer-events:none}';document.head.appendChild(gst);
+let curTab=null;
+function openTab(a){curTab=a;pk.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.id===a));document.getElementById('galtt').textContent=TABS.find(t=>t[0]===a)[1];const g=document.getElementById('galgrid');g.innerHTML='';
+ PAGES.filter(p=>p.tab===a).forEach(pg=>{const b=document.createElement('button');b.dataset.pid=pg.id;b.className=pg.id===curPage?'on':'';b.setAttribute('aria-label',pg.name);b.innerHTML='<img alt="" loading="lazy" src="'+pg.thumb+'"><span>'+pg.style+'</span>';b.onclick=()=>{gal.classList.remove('open');if(curPage!==pg.id)loadPage(pg)};g.appendChild(b)});gal.classList.add('open')}
+document.getElementById('galx').onclick=()=>gal.classList.remove('open');
+window.openTab=openTab;window.closeGal=()=>gal.classList.remove('open');
+TABS.forEach(([a,n])=>{const o=PAGES.find(p=>p.id===a);const b=document.createElement('button');b.dataset.id=a;b.setAttribute('aria-label',n+' pages');b.innerHTML='<img alt="" src="'+o.src+'"><span>'+n+'</span>';b.onclick=()=>{if(gal.classList.contains('open')&&curTab===a)gal.classList.remove('open');else openTab(a)};pk.appendChild(b)});
 window.loadPageById=id=>loadPage(PAGES.find(p=>p.id===id));
-layout();loadPage(PAGES[0]);
+layout();loadPage(PAGES.find(p=>p.id==='cow'));
 // ---- kid mode ----
 const KEY='coloringKidMode';let kid=false;
 function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
